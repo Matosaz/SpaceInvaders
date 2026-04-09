@@ -45,6 +45,14 @@
                     this.creatureKeys.push(key);
                 }
 
+                
+                // Inicialização dos assets de corais:
+                this.load.image('algae', 'assets/coral_sprites/algae.png');
+                this.load.image('concha', 'assets/coral_sprites/Concha.png');
+                this.load.image('coral1', 'assets/coral_sprites/Coral1.png');
+                this.load.image('coral3', 'assets/coral_sprites/Coral3.png');
+                this.load.image('seaweed_img', 'assets/coral_sprites/Seaweed.png');
+
                 // Mantemos o carregamento/geração do submarino e tiros
                 this.generateBaseAssets();
             }
@@ -77,14 +85,6 @@
                 g.lineStyle(2, 0xaaffff, 0.9);
                 g.strokeCircle(8, 8, 6);
                 g.generateTexture('bgBubble', 16, 16);
-
-                // Corals
-                g.clear();
-                g.fillStyle(0xff7a7a, 1);
-                g.fillRoundedRect(8, 18, 10, 26, 5);
-                g.fillRoundedRect(18, 8, 10, 36, 5);
-                g.fillRoundedRect(28, 15, 10, 29, 5);
-                g.generateTexture('coralPink', 46, 46);
 
                 g.clear();
                 g.fillStyle(0x7dffb3, 1);
@@ -447,39 +447,85 @@
                     blendMode: 'ADD'
                 });
             }
-            createDecorativeCorals() {
-                const leftCoral = this.add.image(40, 530, 'coralPink')
-                    .setScale(1.4)
-                    .setDepth(-1)
-                    .setAlpha(0.95);
 
-                const rightCoral = this.add.image(760, 535, 'coralPink')
-                    .setScale(1.2)
-                    .setFlipX(true)
-                    .setDepth(-1)
-                    .setAlpha(0.95);
 
-                this.frontDecor.add(leftCoral);
-                this.frontDecor.add(rightCoral);
 
-                for (let i = 0; i < 7; i++) {
-                    const seaweed = this.add.image(60 + i * 110, 540, 'seaweed')
-                        .setScale(Phaser.Math.FloatBetween(0.7, 1.2))
-                        .setDepth(-2)
-                        .setAlpha(0.8);
+     createDecorativeCorals() {
+    const floorY = 548;
 
-                    this.frontDecor.add(seaweed);
+    // lista planejada de elementos
+    const decorPool = [
+        'concha',
+        'coral1', 'coral1',
+        'coral3', 'coral3',
+        'seaweed_img', 'seaweed_img',
+        'coral1',
+        'coral3',
+        'seaweed_img'
+    ];
 
-                    this.tweens.add({
-                        targets: seaweed,
-                        angle: Phaser.Math.Between(-4, 4),
-                        duration: Phaser.Math.Between(1400, 2400),
-                        yoyo: true,
-                        repeat: -1,
-                        ease: 'Sine.easeInOut'
-                    });
+    // embaralha a ordem para variar sem perder controle
+    Phaser.Utils.Array.Shuffle(decorPool);
+
+    const minSpacing = 55;
+    const maxSpacing = 95;
+
+    let currentX = Phaser.Math.Between(35, 70);
+    let lastKey = null;
+
+    for (let i = 0; i < decorPool.length; i++) {
+        let key = decorPool[i];
+
+        // evita repetição imediata
+        if (key === lastKey) {
+            for (let j = i + 1; j < decorPool.length; j++) {
+                if (decorPool[j] !== lastKey) {
+                    [decorPool[i], decorPool[j]] = [decorPool[j], decorPool[i]];
+                    key = decorPool[i];
+                    break;
                 }
             }
+        }
+
+        if (currentX > 760) break;
+
+        const decor = this.add.image(currentX, floorY, key)
+            .setOrigin(0.5, 1)
+            .setDepth(-2)
+            .setAlpha(0.95);
+
+       
+       
+        if (key === 'seaweed_img') {
+            decor.setDisplaySize(120,120)//presente
+            decor.y = floorY + 6;
+            decor.setScale(0.067);
+        } 
+            else if (key === 'concha') {
+            decor.setScale(0.32);
+            decor.y = floorY + 4;
+        } else {
+            decor.setScale(Phaser.Math.FloatBetween(0.32, 0.5));
+            decor.y = floorY + Phaser.Math.Between(3, 8);
+        }
+
+        if (key !== 'concha') {
+            this.tweens.add({
+                targets: decor,
+                angle: { from: -2, to: 2 },
+                duration: Phaser.Math.Between(2200, 3200),
+                yoyo: true,
+                repeat: -1,
+                ease: 'Sine.easeInOut'
+            });
+        }
+
+        lastKey = key;
+        currentX += Phaser.Math.Between(minSpacing, maxSpacing);
+    }
+}
+
+
             createWaterGradient() {
                 const g = this.add.graphics();
 
@@ -525,6 +571,7 @@
                 this.createParallaxBackground();
                 this.createBubbleSystem();
                 this.createBackgroundFish();
+                this.createDecorativeCorals();
             }
 
             createSandFloor() {
